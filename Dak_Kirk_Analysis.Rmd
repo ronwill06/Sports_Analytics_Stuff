@@ -1,0 +1,42 @@
+---
+title: "Dak_Analysis"
+author: "Rondale Williams"
+date: "5/25/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(devtools)
+devtools::install_github(repo = "maksimhorowitz/nflscrapR")
+
+library(nflscrapR)
+library(tidyverse)
+library(gridExtra)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r nflscrapR}
+
+dak_season_data_2018 <- season_player_game(2018, Weeks=16)
+kirk_season_data_2018 <- season_player_game(2018, Weeks=16)
+
+dak_week_by_pass_yards <- dak_season_data_2018 %>% 
+  filter(name == "D.Prescott")
+
+kirk_week_by_pass_yards <- kirk_season_data_2018 %>% 
+  filter(name == "K.Cousins")
+
+p1 <- ggplot(dak_week_by_pass_yards, aes(x=dak_week_by_pass_yards$date,y=dak_week_by_pass_yards$passyds)) + geom_point() +  ggtitle("Dak's Passing Yards by Month") + xlab("2018 Season") + ylab("Passing Yards") 
+
+p2 <- ggplot(kirk_week_by_pass_yards, aes(x=kirk_week_by_pass_yards$date, y=kirk_week_by_pass_yards$passyds)) + geom_point() + ggtitle("Kirk's Passing Yards by Month") + xlab("2018 Season") + ylab("Passing Yards")
+
+grid.arrange(p1, p2)
+
+```
