@@ -40,3 +40,11 @@ p2 <- ggplot(kirk_week_by_pass_yards, aes(x=kirk_week_by_pass_yards$date, y=kirk
 grid.arrange(p1, p2)
 
 ```
+
+```{r }
+var(dak_week_by_pass_yards$passyds)
+var(kirk_week_by_pass_yards$passyds)
+
+
+
+```

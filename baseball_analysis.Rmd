@@ -1,0 +1,280 @@
+---
+title: "baseball_assignment"
+author: "Rondale Williams"
+date: "7/20/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(tidyverse)
+library(Lahman)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+la_dodgers_since_2008 <- Teams %>%
+  filter(yearID > 2008 & name == "Los Angeles Dodgers") %>%
+  select(teamID, yearID, W, L, R, RA)
+```
+
+```{r}
+runs_squared <- la_dodgers_since_2008$R ^ 2
+runs_allowed_squared <- la_dodgers_since_2008$RA ^ 2
+```
+
+```{r}
+la_dodgers_since_2008 <- la_dodgers_since_2008%>%
+  mutate(Wpct = la_dodgers_since_2008$W / ( la_dodgers_since_2008$L + la_dodgers_since_2008$W), 
+         Wpct_pyt = runs_squared / (runs_squared + runs_allowed_squared))
+```
+
+
+```{r}
+n <- nrow(la_dodgers_since_2008)
+rmse <- sqrt(sum((la_dodgers_since_2008$Wpct - la_dodgers_since_2008$Wpct_pyt) ^ 2) / n)
+rmse
+```
+
+
+```{r}
+la_dodgers_since_2008 <- la_dodgers_since_2008%>%
+  mutate(logWLRatio = log(la_dodgers_since_2008$W / la_dodgers_since_2008$L),
+         logRratio = log(la_dodgers_since_2008$R / la_dodgers_since_2008$RA))
+```
+
+
+```{r}
+```
+
+
+```{r}
+fit <-lm(logWLRatio ~ 0 + logRratio, data = la_dodgers_since_2008)
+fit
+```
+```{r}
+dodgers_leaderboard <- read.csv("~/Downloads/FanGraphs_Leaderboard_Dodgers.csv")
+dodgers_leaderboard <- dodgers_leaderboard[order(-dodgers_leaderboard$AB),]
+
+names(dodgers_leaderboard)[names(dodgers_leaderboard) == "Contact...pi."] <- "ContactPct"
+names(dodgers_leaderboard)[names(dodgers_leaderboard) == "Swing...pi."] <- "SwingPct"
+
+dodgers_leaderboard
+```
+
+```{r}
+dropPercentSign <- function(x) {
+  substring(x, 1, nchar(x)-1)
+}
+```
+
+```{r}
+
+dodgers_leaderboard$ContactPct <- as.character(dodgers_leaderboard$ContactPct)
+dodgers_leaderboard$SwingPct <- as.character(dodgers_leaderboard$SwingPct)
+
+dodgers_leaderboard$ContactPct <- sapply(dodgers_leaderboard$ContactPct, dropPercentSign)
+dodgers_leaderboard$SwingPct <- sapply(dodgers_leaderboard$SwingPct, dropPercentSign)
+
+dodgers_leaderboard$ContactPct <- as.numeric(dodgers_leaderboard$ContactPct)
+dodgers_leaderboard$SwingPct <- as.numeric(dodgers_leaderboard$SwingPct)
+
+dodgers_leaderboard
+```
+
+
+```{r}
+top_three_ab <- dodgers_leaderboard[1:3,]
+top_three_ab
+```
+
+Here we look at how many RBIs the top three players with the most at bats have. We see that currently Ronald Acuna has more RBIs than the other players in this list. Compared 
+
+```{r}
+library(ggplot2)
+
+ggplot(data=top_three_ab, aes(top_three_ab$Name, top_three_ab$RBI)) + geom_bar(stat="identity", fill="steelblue") + theme_minimal() + xlab("Names") + ylab("RBIs")
+```
+
+
+```{r}
+bellinger <- dodgers_leaderboard[as.character(dodgers_leaderboard$Name) == "Cody Bellinger", ]
+turner <- dodgers_leaderboard[as.character(dodgers_leaderboard$Name) == "Justin Turner", ]
+muncy <- dodgers_leaderboard[as.character(dodgers_leaderboard$Name) == "Max Muncy", ]
+```
+
+```{r}
+league_leaderboard <- read.csv("~/Downloads/FanGraphs_Leaderboard.csv")
+
+names(league_leaderboard)[names(league_leaderboard) == "Contact...pi."] <- "ContactPct"
+names(league_leaderboard)[names(league_leaderboard) == "Swing...pi."] <- "SwingPct"
+
+league_leaderboard$ContactPct <- as.character(league_leaderboard$ContactPct)
+league_leaderboard$SwingPct <- as.character(league_leaderboard$SwingPct)
+
+league_leaderboard$ContactPct <- sapply(league_leaderboard$ContactPct, dropPercentSign)
+league_leaderboard$SwingPct <- sapply(league_leaderboard$SwingPct, dropPercentSign)
+
+league_leaderboard$ContactPct <- as.numeric(league_leaderboard$ContactPct)
+league_leaderboard$SwingPct <- as.numeric(league_leaderboard$SwingPct)
+
+league_leaderboard
+```
+As we see below, only Josh Bell has more RBIs than Cody Bellinger. Bellinger is near the top of the league. Only 1.3 percent of players are better at hitting RBIs than him. His RBIs are also well above the league mean of about 49 RBIs.
+
+```{r}
+wo_bellinger <- league_leaderboard[!(as.character(league_leaderboard$Name) == "Cody Bellinger"),]
+rbis_greater_than_bellinger <- wo_bellinger[wo_bellinger$RBI > bellinger$RBI,]
+
+percentage_better <- nrow(rbis_greater_than_bellinger) / nrow(wo_bellinger)
+
+paste("Percentage of League that has more RBIs:", percentage_better * 100)
+paste("Bellinger's RBIs:", bellinger$RBI)
+paste("League Mean RBIs:", mean(wo_bellinger$RBI))
+```
+We also see that about 77 percent of players are better at hitting RBIs than Turner. The number Turner's RBIs are also below average. He currently one has 39 RBIs.
+
+```{r}
+wo_turner <- league_leaderboard[!(as.character(league_leaderboard$Name) == "Justin Turner"),]
+rbis_greater_than_turner <- wo_turner[wo_turner$RBI > turner$RBI,]
+
+percentage_better <- nrow(rbis_greater_than_turner) / nrow(league_leaderboard)
+
+paste("Percentage of League that has more RBIs:", percentage_better * 100)
+paste("Turner's RBIs:", turner$RBI)
+paste("League Mean RBIs:", mean(wo_turner$RBI))
+```
+Here we see that Max Muncy is quite good. Only about 12% of the league hits more RBIs than Muncy. It looks like the Dodgers players who make the most appearances at the plate really take advantage of their opportuntities.
+
+```{r}
+wo_muncy <- league_leaderboard[!(as.character(league_leaderboard$Name) == "Max Muncy"),]
+rbis_greater_than_muncy <- wo_muncy[wo_muncy$RBI > muncy$RBI,]
+
+percentage_better <- nrow(rbis_greater_than_muncy) / nrow(wo_muncy)
+
+paste("Percentage of League that has more RBIs:", percentage_better * 100)
+paste("Muncy's RBIs:", muncy$RBI)
+paste("League Mean RBIs:", mean(wo_muncy$RBI))
+```
+
+
+```{r}
+re24_greater_than_bellinger <- wo_bellinger[wo_bellinger$RE24 > bellinger$RE24,]
+
+percentage_better <- nrow(re24_greater_than_bellinger) / nrow(wo_bellinger)
+
+paste("Percentage of League that has a better RE24 stat:", percentage_better * 100)
+paste("Bellinger's RE24:", muncy$RE24)
+paste("League Mean RBIs:", mean(wo_bellinger$RE24))
+```
+
+
+```{r}
+re24_greater_than_turner <- wo_turner[wo_turner$RE24 > turner$RE24,]
+percentage_better <- nrow(re24_greater_than_turner) / nrow(wo_turner)
+
+paste("Percentage of League that has a better RE24 stat:", percentage_better * 100)
+paste("Turner's RE24:", turner$RE24)
+paste("League Mean RBIs:", mean(wo_turner$RE24))
+```
+```{r}
+re24_greater_than_muncy <- wo_muncy[wo_muncy$RE24 > muncy$RE24,]
+percentage_better <- nrow(re24_greater_than_muncy) / nrow(wo_muncy)
+
+paste("Percentage of League that has a better RE24 stat:", percentage_better * 100)
+paste("Muncy's RE24:", muncy$RE24)
+paste("League Mean RBIs:", mean(wo_muncy$RE24))
+```
+
+```{r}
+swpi_greater_than_bellinger <- wo_bellinger_leaderboard[wo_bellinger_leaderboard$SwingPct > bellinger$SwingPct,]
+percentage_better <- nrow(swpi_greater_than_bellinger) / nrow(wo_bellinger_leaderboard)
+
+paste("Percentage of League that has a greater Swing Pct: ", percentage_greater * 100)
+paste("Bellinger's Swing Pct:", bellinger$SwingPct)
+paste("League Mean Swing Pct:", mean(wo_bellinger$SwingPct))
+```
+
+```{r}
+swpi_greater_than_turner <- wo_turner[wo_turner$SwingPct > turner$SwingPct,]
+percentage_greater <- nrow(swpi_greater_than_turner) / nrow(wo_turner)
+
+paste("Percentage of League that has a greater Swing Pct: ", percentage_greater * 100)
+paste("Turner's Swing Pct:", turner$SwingPct)
+paste("League Mean Swing Pct:", mean(wo_turner$SwingPct))
+```
+
+```{r}
+swpi_greater_than_muncy <- wo_muncy[wo_muncy$SwingPct > muncy$SwingPct,]
+percentage_better <- nrow(swpi_greater_than_muncy) / nrow(wo_muncy)
+
+paste("Percentage of League that has a greater Swing Pct: ", percentage_better * 100)
+paste("Muncy's Swing Pct:",muncy$SwingPct)
+paste("League Mean Swing Pct:", mean(wo_muncy$SwingPct))
+```
+
+```{r}
+conpi_greater_than_bellinger <- wo_bellinger[wo_bellinger$ContactPct > bellinger$ContactPct,]
+percentage_better <- nrow(conpi_greater_than_bellinger) / nrow(wo_bellinger)
+
+paste("Percentage of League that has a greater Contact Pct:", percentage_better * 100)
+paste("Bellinger's Contact Pct:", bellinger$Contact)
+paste("League Mean Contact Pct:", mean(wo_bellinger$ContactPct))
+```
+
+```{r}
+conpi_greater_than_turner <- wo_turner[wo_turner$ContactPct > turner$ContactPct,]
+percentage_better <- nrow(conpi_greater_than_turner) / nrow(wo_turner)
+
+paste("Percentage of League that has a greater Contact Pct:", percentage_better * 100)
+paste("Turner's Contact Pct:", turner$Contact)
+paste("League Mean Contact Pct:", mean(wo_turner$ContactPct))
+```
+
+```{r}
+conpi_greater_than_muncy <- wo_muncy[wo_muncy$ContactPct > muncy$ContactPct,]
+percentage_better <- nrow(conpi_greater_than_muncy) / nrow(wo_muncy)
+
+paste("Percentage of League that has a greater Contact Pct: ", percentage_better * 100)
+paste("Muncy's Contact Pct:",muncy$ContactPct)
+paste("League Mean Contact Pct:", mean(wo_muncy$ContactPct))
+```
+```{r}
+dodgers_lineup <- read.csv("~/Downloads/dodgers_lineup.csv")
+dodgers_lineup
+```
+
+```{r}
+current_team_runs <- sum(dodgers_lineup$R)
+current_team_runs
+```
+Below we see that we would get 34 more runs if we had George Springer in our lineup.
+
+```{r}
+astros_leaderboard <- read.csv("~/Downloads/astros_leaderboard.csv")
+astros_leaderboard$Name <- as.character(astros_leaderboard$Name)
+astros_leaderboard$R <- as.integer(astros_leaderboard$R)
+
+astros_leaderboard <- astros_leaderboard[c("Name", "R")]
+dodgers_lineup <- dodgers_lineup[c("Name", "R")]
+
+wo_pollock <- subset(dodgers_lineup, !(as.character(dodgers_lineup$Name) == "A.J. Pollock"))
+wo_pollock$Name <- as.character(wo_pollock$Name)
+
+springer <- subset(astros_leaderboard, astros_leaderboard$Name == "George Springer")
+w_springer <- rbind(wo_pollock, springer)
+
+sum(w_springer$R)
+```
